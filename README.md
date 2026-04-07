@@ -48,10 +48,6 @@ openclaw.exe --version
 
 然后在 Cherry Studio 中启动 OpenClaw 即可。
 
-## 快速开始（无需编译）
-
-如果不想自己编译，可以直接从 [Releases](https://github.com/shen-lang123/openclaw-universal/releases) 下载编译好的 `openclaw.exe`。
-
 ## 可选：修复 netstat ENOBUFS
 
 如果启动时遇到 `ENOBUFS` 错误（TCP 连接数多时出现），需要修补 OpenClaw 源码：
@@ -66,6 +62,16 @@ Select-String -Path "$distDir\*.js" -Pattern "netstat" -List | Select Filename
 # 给 execFileSync 调用添加 maxBuffer: 10 * 1024 * 1024
 # 给 spawnSync 调用添加 maxBuffer: 10 * 1024 * 1024
 ```
+
+## 一键升级
+
+使用 `upgrade-openclaw.ps1` 脚本自动完成停止进程、安装新版、编译包装器、修补 netstat 的全流程：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "upgrade-openclaw.ps1"
+```
+
+> ⚠️ 每次升级后需重新打 netstat 补丁（文件名哈希会变），脚本已自动处理。
 
 ## 分发
 
