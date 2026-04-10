@@ -1,9 +1,9 @@
 # OpenClaw One-Click Upgrade Script
-# Usage: powershell -ExecutionPolicy Bypass -File "upgrade-openclaw.ps1"
+# Usage: powershell -ExecutionPolicy Bypass -File "D:\Memory\openclaw-universal\upgrade-openclaw.ps1"
 Write-Host "=== OpenClaw Upgrade Tool ===" -ForegroundColor Cyan
 
 # 1. Stop OpenClaw
-Write-Host "`n[1/5] Stopping OpenClaw..." -ForegroundColor Yellow
+Write-Host "`n[1/4] Stopping OpenClaw..." -ForegroundColor Yellow
 Get-Process -Name "openclaw" -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
     try { $_.CommandLine -match "openclaw" } catch { $false }
@@ -11,18 +11,20 @@ Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
 Start-Sleep -Seconds 1
 
 # 2. Install latest
-Write-Host "[2/5] Installing latest OpenClaw..." -ForegroundColor Yellow
+Write-Host "[2/4] Installing latest OpenClaw..." -ForegroundColor Yellow
 npm install -g openclaw@latest
 $newVersion = npx openclaw --version 2>&1
 Write-Host "  Installed: $newVersion"
 
-# 3. Compile wrapper
-Write-Host "[3/5] Compiling wrapper exe..." -ForegroundColor Yellow
-bun build "wrapper.js" --compile --outfile "openclaw.exe"
+# 3. Compile wrapper (auto-detect, ESM format, bun build)
+Write-Host "[3/4] Compiling wrapper exe..." -ForegroundColor Yellow
+$wrapperFile = "D:\Memory\openclaw-universal\wrapper.js"
+bun build $wrapperFile --compile --outfile "C:\Users\shenlang\.cherrystudio\bin\openclaw.exe"
+Copy-Item "C:\Users\shenlang\.cherrystudio\bin\openclaw.exe" "D:\Memory\openclaw-universal\openclaw.exe" -Force
 
 # 4. Patch netstat maxBuffer
-Write-Host "[4/5] Patching netstat maxBuffer..." -ForegroundColor Yellow
-$distDir = (npm root -g).Trim() + "\openclaw\dist"
+Write-Host "[4/4] Patching netstat maxBuffer..." -ForegroundColor Yellow
+$distDir = "D:\Software\Dnpm-global\node_modules\openclaw\dist"
 
 if (-not (Test-Path $distDir)) {
     Write-Host "  ERROR: dist dir not found: $distDir" -ForegroundColor Red
@@ -61,9 +63,8 @@ if ($patchedCount -eq 0) {
     Write-Host "  No files needed patching (may already be fixed)" -ForegroundColor Gray
 }
 
-# 5. Verify
-Write-Host "[5/5] Verifying..." -ForegroundColor Yellow
-$version = & ".\openclaw.exe" --version 2>&1
+# Verify
 Write-Host "`n=== Upgrade Complete ===" -ForegroundColor Cyan
+$version = & "C:\Users\shenlang\.cherrystudio\bin\openclaw.exe" --version 2>&1
 Write-Host "Version: $version" -ForegroundColor Green
 Write-Host "`nPlease restart OpenClaw in Cherry Studio" -ForegroundColor Yellow

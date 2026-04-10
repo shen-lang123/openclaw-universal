@@ -5,7 +5,7 @@
 // 前提条件：
 // 1. 已安装 Node.js（并在 PATH 中）
 // 2. 已运行: npm install -g openclaw@latest
-// 3. 将编译后的 exe 替换 Cherry Studio 的 openclaw.exe
+// 3. 用 bun build --compile 编译成 exe
 
 import { execSync, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -17,7 +17,7 @@ import { platform } from "node:os";
 function resolveOpenClawEntry() {
   const candidates = [];
 
-  // 方式1: npm root -g
+  // 方式1: npm root -g（最可靠）
   try {
     const npmRoot = execSync("npm root -g", { encoding: "utf-8", timeout: 10000, stdio: ["pipe","pipe","pipe"] }).trim();
     if (npmRoot) candidates.push(join(npmRoot, "openclaw", "dist", "index.js"));
@@ -29,13 +29,7 @@ function resolveOpenClawEntry() {
     if (pnpmRoot) candidates.push(join(pnpmRoot, "openclaw", "dist", "index.js"));
   } catch {}
 
-  // 方式3: yarn global dir
-  try {
-    const yarnDir = execSync("yarn global dir", { encoding: "utf-8", timeout: 10000, stdio: ["pipe","pipe","pipe"] }).trim();
-    if (yarnDir) candidates.push(join(yarnDir, "node_modules", "openclaw", "dist", "index.js"));
-  } catch {}
-
-  // 方式4: 常见路径猜测
+  // 方式3: 常见路径猜测
   const appData = process.env.APPDATA;
   if (appData) {
     candidates.push(join(appData, "npm", "node_modules", "openclaw", "dist", "index.js"));
@@ -50,15 +44,7 @@ function resolveOpenClawEntry() {
   const programFiles = process.env.ProgramFiles || "C:\\Program Files";
   candidates.push(join(programFiles, "nodejs", "node_modules", "npm", "node_modules", "openclaw", "dist", "index.js"));
 
-  const nvmHome = process.env.NVM_HOME;
-  if (nvmHome) {
-    try {
-      const currentVersion = execSync("node -v", { encoding: "utf-8", timeout: 5000 }).trim();
-      candidates.push(join(nvmHome, "v" + currentVersion, "node_modules", "openclaw", "dist", "index.js"));
-    } catch {}
-  }
-
-  // 方式5: 通过 where/which 反推
+  // 方式4: 通过 where 找到 openclaw 命令的位置反推
   try {
     const whereOutput = execSync(
       platform() === "win32" ? "where openclaw 2>nul" : "which openclaw 2>/dev/null",
@@ -72,14 +58,18 @@ function resolveOpenClawEntry() {
     }
   } catch {}
 
+  // 去重并检查存在性
   const seen = new Set();
   for (const candidate of candidates) {
     const normalized = candidate.replace(/\\/g, "/").toLowerCase();
     if (!seen.has(normalized)) {
       seen.add(normalized);
-      if (existsSync(candidate)) return candidate;
+      if (existsSync(candidate)) {
+        return candidate;
+      }
     }
   }
+
   return null;
 }
 
@@ -95,11 +85,6 @@ if (!entry) {
   console.error("");
   console.error("  请先安装 OpenClaw：");
   console.error("    npm install -g openclaw@latest");
-  console.error("");
-  console.error("  如果已安装但仍报此错误，请检查：");
-  console.error("    1. Node.js 是否已安装且在 PATH 中");
-  console.error("    2. npm root -g 输出的目录下是否有 openclaw");
-  console.error("    3. 如果使用 fnm/volta/nvm，确保切换到了有 openclaw 的 Node 版本");
   console.error("");
   process.exit(1);
 }
